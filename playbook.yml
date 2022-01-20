@@ -1,0 +1,30 @@
+- hosts: 
+  vars_files:
+    - secrets.yml 
+  vars:
+    github_repo_url: 
+    working_directory: /path/to/app
+  tasks:
+    - name: "Pull changes from GitHub"
+      git:
+        repo: "{{github_repo_url}}",
+        dest: "{{working_directory}}"
+        version: master 
+        accept_hostkey: yes
+      register: repo
+      
+    - name: "Install Composer dependencies"
+      script: composer install --no-scripts --no-dev
+      when: repo.changed 
+    
+    - name: "Cache the configuration"
+      script: "php artisan config:cache"
+      when: repo.changed 
+      
+    - name: "Clear the view cache"
+      script: "php artisan view:clear"
+      when: repo.changed 
+      
+    - name: "Run the migrations"
+      script: "php artisan migrate --force"
+      when: repo.changed
